@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MATHIAS OS // PROTOCOLO ANGELINA 3000</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --bg-void: #02060d;
+      --bg-panel: rgba(6, 22, 42, 0.65);
+      --primary: #00f0ff;
+      --primary-glow: rgba(0, 240, 255, 0.45);
+      --secondary: #0066ff;
+      --gold: #f5a623;
+      --copper: #d47a39;
+      --crimson: #ff2a5f;
+      --text-main: #e6f9ff;
+      --text-muted: #76a5c4;
+      --border-hud: rgba(0, 240, 255, 0.32);
+    }
+
+    /* Tema Armadura Mark XLIX - RESCUE (Angelina Mode) */
+    body.rescue-mode {
+      --bg-void: #06071b;
+      --bg-panel: rgba(18, 16, 52, 0.68);
+      --primary: #a29bfe;
+      --primary-glow: rgba(162, 155, 254, 0.5);
+      --secondary: #6c5ce7;
+      --gold: #f8c291;
+      --copper: #e58e26;
+      --border-hud: rgba(248, 194, 145, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 0.6s ease, color 0.4s ease;
+      background-image: 
+        radial-gradient(circle at 50% 35%, rgba(0, 240, 255, 0.08) 0%, transparent 65%),
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 36px 36px, 36px 36px;
+    }
+
+    /* Scanlines sutiles de fondo */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.18) 3px
+      );
+      pointer-events: none;
+      z-index: 900;
+    }
+
+    /* PANTALLA DE AUTENTICACIÓN INICIAL */
+    #auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #07192e 0%, #02050a 100%);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      transition: opacity 0.7s ease, visibility 0.7s ease;
+    }
+
+    #auth-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .scanner-ring {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      border: 2px dashed var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 24px;
+      box-shadow: 0 0 35px var(--primary-glow), inset 0 0 25px var(--primary-glow);
+      animation: spinSlow 14s linear infinite;
+      cursor: pointer;
+    }
+
+    .scanner-core {
+      width: 105px;
+      height: 105px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--primary) 0%, transparent 75%);
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      color: #02060d;
+      text-shadow: 0 0 5px #fff;
+      animation: pulseCore 2s ease-in-out infinite;
+    }
+
+    .auth-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      letter-spacing: 3px;
+      color: var(--primary);
+      text-shadow: 0 0 12px var(--primary-glow);
+      margin-bottom: 8px;
+    }
+
+    .auth-sub {
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      max-width: 440px;
+      margin-bottom: 24px;
+    }
+
+    .btn-hud {
+      background: rgba(0, 240, 255, 0.12);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.82rem;
+      letter-spacing: 1.5px;
+      padding: 13px 24px;
+      cursor: pointer;
+      text-transform: uppercase;
+      clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+      transition: all 0.25s ease;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.18);
+    }
+
+    .btn-hud:hover, .btn-hud:active {
+      background: var(--primary);
+      color: #02060d;
+      box-shadow: 0 0 25px var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .btn-gold {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: rgba(245, 166, 35, 0.12);
+      box-shadow: 0 0 15px rgba(245, 166, 35, 0.2);
+    }
+    .btn-gold:hover {
+      background: var(--gold);
+      color: #02060d;
+      box-shadow: 0 0 28px var(--gold);
+    }
+
+    .btn-crimson {
+      border-color: var(--crimson);
+      color: var(--crimson);
+      background: rgba(255, 42, 95, 0.12);
+    }
+    .btn-crimson:hover {
+      background: var(--crimson);
+      color: #fff;
+      box-shadow: 0 0 25px var(--crimson);
+    }
+
+    /* HEADER SUPERIOR */
+    header.hud-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border-hud);
+      background: rgba(3, 10, 22, 0.85);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+    }
+
+    .brand-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 2px;
+      color: var(--primary);
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-sm {
+      padding: 7px 13px;
+      font-size: 0.7rem;
+    }
+
+    /* GRID PRINCIPAL */
+    .hud-grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 1024px) {
+      .hud-grid {
+        grid-template-columns: 350px 1fr 360px;
+        align-items: start;
+      }
+    }
+
+    /* TARJETAS HUD */
+    .hud-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hud);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      padding: 20px;
+      position: relative;
+      clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 240, 255, 0.04);
+      margin-bottom: 20px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-hud);
+      padding-bottom: 9px;
+      margin-bottom: 15px;
+    }
+
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.82rem;
+      letter-spacing: 1.5px;
+      color: var(--primary);
+      text-transform: uppercase;
+    }
+
+    .panel-code {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--gold);
+    }
+
+    /* REACTOR ARC CENTRAL */
+    .reactor-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .reactor-wrapper {
+      width: 290px;
+      height: 290px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 8px 0 18px;
+      cursor: pointer;
+    }
+
+    .reactor-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 18px var(--primary-glow));
+      transition: filter 0.3s ease;
+    }
+
+    .ring-cw {
+      transform-origin: 150px 150px;
+      animation: spinSlow 20s linear infinite;
+    }
+
+    .ring-ccw {
+      transform-origin: 150px 150px;
+      animation: spinReverse 14s linear infinite;
+    }
+
+    .reactor-percent-badge {
+      position: absolute;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 1.55rem;
+      color: #ffffff;
+      text-shadow: 0 0 14px var(--primary), 0 0 25px var(--primary);
+      pointer-events: none;
+    }
+
+    /* Controles de Energía */
+    .power-controls {
+      width: 100%;
+      max-width: 440px;
+      margin-top: 6px;
+    }
+
+    input[type="range"].stark-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--border-hud);
+      border-radius: 4px;
+      outline: none;
+      margin: 12px 0 16px;
+    }
+
+    input[type="range"].stark-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 15px var(--primary);
+      cursor: pointer;
+      border: 2px solid #fff;
+    }
+
+    .unlock-monitor {
+      width: 100%;
+      background: rgba(2, 10, 20, 0.85);
+      border: 1px solid var(--border-hud);
+      border-left: 4px solid var(--primary);
+      padding: 16px;
+      margin-top: 16px;
+      text-align: left;
+      min-height: 105px;
+    }
+
+    .unlock-phase {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--gold);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .unlock-text {
+      font-size: 1.08rem;
+      line-height: 1.45;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Botón Especial del Holograma al 100% */
+    #btn-open-hologram {
+      display: none;
+      margin-top: 16px;
+      width: 100%;
+      padding: 15px;
+      font-size: 0.9rem;
+      animation: pulseGlowGold 1.8s infinite;
+    }
+
+    /* TELEMETRÍA */
+    .metric-item {
+      margin-bottom: 14px;
+    }
+
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.92rem;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .metric-val {
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--primary);
+    }
+
+    .bar-bg {
+      width: 100%;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      border-radius: 2px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
+      box-shadow: 0 0 10px var(--primary);
+      transition: width 0.6s ease, background 0.4s ease;
+    }
+
+    .metric-sub {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* ECG Pulso Cardíaco */
+    .ecg-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      padding: 10px;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ecg-line {
+      stroke: var(--crimson);
+      stroke-width: 2.2;
+      fill: none;
+      stroke-dasharray: 220;
+      stroke-dashoffset: 220;
+      animation: ecgAnim 2s linear infinite;
+      filter: drop-shadow(0 0 6px var(--crimson));
+    }
+
+    /* GENERADOR 3000 */
+    .counter-3000 {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px solid var(--border-hud);
+      padding: 12px 16px;
+      margin-bottom: 14px;
+    }
+
+    .big-3000 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--gold);
+      text-shadow: 0 0 15px rgba(245, 166, 35, 0.5);
+    }
+
+    .reason-terminal {
+      background: rgba(2, 8, 18, 0.9);
+      border: 1px solid var(--border-hud);
+      padding: 15px;
+      min-height: 120px;
+      font-size: 1.03rem;
+      line-height: 1.45;
+      margin-bottom: 14px;
+      position: relative;
+    }
+
+    .cursor-blink {
+      display: inline-block;
+      width: 8px;
+      height: 15px;
+      background: var(--primary);
+      vertical-align: middle;
+      margin-left: 4px;
+      animation: blink 0.8s infinite;
+    }
+
+    /* VALE HOLOGRÁFICO */
+    .voucher-card {
+      display: none;
+      margin-top: 15px;
+      background: linear-gradient(135deg, rgba(245, 166, 35, 0.18) 0%, rgba(12, 24, 42, 0.95) 100%);
+      border: 1px solid var(--gold);
+      padding: 16px;
+      box-shadow: 0 0 25px rgba(245, 166, 35, 0.25);
+    }
+
+    .voucher-card.active {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .voucher-serial {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+
+    .voucher-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem;
+      color: #fff;
+      margin: 6px 0;
+    }
+
+    /* DRONES RESCUE MARK 49 */
+    .rescue-drones {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .drone-hex {
+      width: 28px;
+      height: 28px;
+      background: rgba(248, 194, 145, 0.2);
+      border: 1px solid var(--gold);
+      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: var(--gold);
+      animation: pulseCore 2s infinite alternate;
+    }
+
+    /* ====================================================
+       MODAL DEL PROYECTOR HOLOGRÁFICO DEL CASCO (MARK LXXXV)
+       ==================================================== */
+    #hologram-modal {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 60%, #041326 0%, #010307 85%);
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    #hologram-modal.active {
+      display: flex;
+      animation: fadeIn 0.6s ease;
+    }
+
+    .holo-top-bar {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* Escenario del Haz Holográfico */
+    .holo-stage {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: auto 0;
+    }
+
+    /* Ventana de Proyección Flotante */
+    .holo-projection-box {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      min-height: 290px;
+      border: 1px solid rgba(0, 240, 255, 0.65);
+      background: rgba(0, 35, 65, 0.35);
+      box-shadow: 
+        0 0 40px rgba(0, 240, 255, 0.45),
+        inset 0 0 35px rgba(0, 240, 255, 0.35);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: holoFlicker 5s infinite;
+      z-index: 5;
+    }
+
+    /* Video con Filtro Holograma Stark Real */
+    #holo-video {
+      width: 100%;
+      max-height: 330px;
+      object-fit: cover;
+      /* Convierte cualquier video normal en un holograma azul cian brillante */
+      filter: grayscale(100%) sepia(100%) hue-rotate(152deg) saturate(380%) brightness(1.15) contrast(1.25);
+      mix-blend-mode: screen;
+      opacity: 0.92;
+      display: block;
+    }
+
+    /* Líneas de escaneo en movimiento sobre tu cara en el video */
+    .holo-scanlines {
+      position: absolute;
+      inset: 0;
+      background: 
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0px,
+          transparent 2px,
+          rgba(0, 240, 255, 0.22) 3px,
+          rgba(0, 10, 24, 0.45) 4px
+        ),
+        linear-gradient(180deg, rgba(0,240,255,0) 0%, rgba(0,240,255,0.28) 50%, rgba(0,240,255,0) 100%);
+      background-size: 100% 4px, 100% 200%;
+      animation: scanMove 4s linear infinite;
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    /* Mensaje superpuesto sobre/debajo del holograma */
+    .holo-caption-overlay {
+      position: relative;
+      z-index: 7;
+      background: rgba(1, 12, 26, 0.82);
+      border-top: 1px solid rgba(0, 240, 255, 0.5);
+      width: 100%;
+      padding: 12px 16px;
+      text-align: center;
+    }
+
+    .holo-quote {
+      font-size: 1rem;
+      color: #d8fbff;
+      text-shadow: 0 0 8px #00f0ff;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
+    /* Cono de Luz desde los ojos del casco hacia el video */
+    .holo-light-cone {
+      width: 100%;
+      max-width: 440px;
+      height: 95px;
+      background: linear-gradient(
+        to top,
+        rgba(0, 240, 255, 0.65) 0%,
+        rgba(0, 240, 255, 0.18) 60%,
+        rgba(0, 240, 255, 0.04) 100%
+      );
+      clip-path: polygon(0% 0%, 100% 0%, 62% 100%, 38% 100%);
+      filter: blur(4px);
+      margin-top: -4px;
+      pointer-events: none;
+      animation: pulseBeam 2.2s ease-in-out infinite alternate;
+    }
+
+    /* Casco de Iron Man (Mark LXXXV) en la mesa */
+    .helmet-svg {
+      width: 170px;
+      height: 110px;
+      margin-top: -18px;
+      filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.5));
+      z-index: 8;
+    }
+
+    .holo-controls-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 12px;
+      z-index: 12;
+    }
+
+    input[type="file"]#video-upload {
+      display: none;
+    }
+
+    /* ANIMACIONES */
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes spinReverse {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+    @keyframes pulseCore {
+      0%, 100% { transform: scale(1); opacity: 0.85; }
+      50% { transform: scale(1.06); opacity: 1; }
+    }
+    @keyframes pulseGlowGold {
+      0%, 100% { box-shadow: 0 0 15px rgba(245, 166, 35, 0.4); }
+      50% { box-shadow: 0 0 32px rgba(245, 166, 35, 0.95); }
+    }
+    @keyframes ecgAnim {
+      to { stroke-dashoffset: 0; }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scanMove {
+      0% { background-position: 0 0, 0 -100%; }
+      100% { background-position: 0 0, 0 200%; }
+    }
+    @keyframes pulseBeam {
+      0% { opacity: 0.72; }
+      100% { opacity: 1; }
+    }
+    @keyframes holoFlicker {
+      0%, 100% { opacity: 1; transform: skewX(0deg); }
+      48% { opacity: 1; }
+      49% { opacity: 0.84; transform: skewX(0.6deg); }
+      50% { opacity: 1; transform: skewX(0deg); }
+      88% { opacity: 1; }
+      89% { opacity: 0.9; transform: scaleY(0.995); }
+      90% { opacity: 1; transform: scaleY(1); }
+    }
+  
+/* ===== MEJORAS ===== */
+body{padding-bottom:env(safe-area-inset-bottom,0)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+#toast-x{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:1200;background:#000;border:1px solid var(--primary);color:var(--text-main);padding:10px 16px;font-family:'Share Tech Mono',monospace;font-size:.85rem;opacity:0;transition:opacity .4s;pointer-events:none;text-align:center;max-width:90vw}
+#toast-x.show{opacity:1}
+.voucher-card.active{box-shadow:0 0 30px rgba(245,166,35,.45)}
+.voucher-card.again{animation:fadeIn .5s ease}
+#btn-save-voucher{margin-top:10px;width:100%;min-height:48px}
+.btn-hud{min-height:48px}
+body.maxed .reactor-stage{box-shadow:0 0 60px rgba(245,166,35,.25)}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+
+  <!-- =========================================================
+       FASE 0: PANTALLA DE ACCESO BIOMÉTRICO (ANGELINA OS)
+       ========================================================= -->
+  <div id="auth-overlay">
+    <div class="scanner-ring" id="btn-auth-ring">
+      <div class="scanner-core">TOCAR AQUÍ</div>
+    </div>
+    <h1 class="auth-title">MATHIAS INDUSTRIES // SERVIDOR DEL CORAZÓN</h1>
+    <p class="auth-sub" id="auth-status-text">
+      SISTEMA BLOQUEADO. SE REQUIERE VERIFICACIÓN BIOMÉTRICA DE: <strong>ANGELINA</strong>
+    </p>
+    <button class="btn-hud" id="btn-auth-start">
+      VERIFICAR IDENTIDAD: ANGELINA
+    </button>
+  </div>
+
+  <!-- =========================================================
+       HEADER PRINCIPAL DEL HUD
+       ========================================================= -->
+  <header class="hud-header">
+    <div class="brand-box">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-title">MATHIAS OS // PROTOCOLO ANGELINA</div>
+        <div style="font-family:'Share Tech Mono',monospace; font-size:0.72rem; color:var(--text-muted);">
+          SYS.02:00.AM // CONEXIÓN DIRECTA AL CORAZÓN
+        </div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button class="btn-hud btn-gold btn-sm" id="btn-rescue-mode">
+        ARMADURA MARK XLIX: RESCUE (OFF)
+      </button>
+      <button class="btn-hud btn-sm" id="btn-mute">
+        AUDIO: ON
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================================================
+       DASHBOARD PRINCIPAL DE 3 COLUMNAS
+       ========================================================= -->
+  <main class="hud-grid">
+
+    <!-- COLUMNA IZQUIERDA: PROTOCOLO ANGELINA -->
+    <section>
+
+      <!-- MÓDULO: PROTOCOLO DE EMERGENCIA ANGELINA -->
+      <div class="hud-panel">
+        <div class="panel-header">
+          <span class="panel-title" style="color:var(--crimson);">Protocolo de Emergencia</span>
+          <span class="panel-code">OVERRIDE-CEO</span>
+        </div>
+        <p style="font-size:0.95rem; margin-bottom:14px; color:var(--text-main);">
+          ¿Mathias se puso terco, estresado o insoportable? Activa tu autoridad nivel CEO para domarlo al instante y reclamar una recompensa:
+        </p>
+        <button class="btn-hud btn-crimson" style="width:100%;" id="btn-emergency">
+          EJECUTAR PROTOCOLO ANGELINA
+        </button>
+
+        <!-- Tarjeta de Vale Canjeable -->
+        <div class="voucher-card" id="voucher-box">
+          <div class="voucher-serial" id="voucher-serial">VALE OFICIAL // STARK-ANG-001</div>
+          <div class="voucher-title" id="voucher-title">VALE POR UN ABRAZO INTERMINABLE</div>
+          <p style="font-size:0.9rem; color:var(--text-muted);" id="voucher-desc">
+            Tómale captura a esta tarjeta y envíasela a Mathias para canjearla en cualquier momento sin derecho a reclamo.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLUMNA CENTRAL: REACTOR ARC ("PROOF THAT MATHIAS HAS A HEART") -->
+    <section class="hud-panel reactor-stage">
+      <div class="panel-header" style="width:100%;">
+        <span class="panel-title">Núcleo Reactor Arc Mark LXXXV</span>
+        <span class="panel-code" id="reactor-status-tag">STANDBY // 20%</span>
+      </div>
+
+      <p style="font-size:0.95rem; color:var(--text-muted); max-width:420px;">
+        Sube la potencia del reactor o presiona el núcleo para desbloquear lo que Mathias guarda adentro para ti, Angelina:
+      </p>
+
+      <!-- SVG DEL REACTOR ARC -->
+      <div class="reactor-wrapper" id="reactor-click-zone" title="Toca para inyectar +20% de energía">
+        <svg class="reactor-svg" id="reactor-svg" viewBox="0 0 300 300">
+          <defs>
+            <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ffffff" />
+              <stop offset="45%" stop-color="#00f0ff" />
+              <stop offset="100%" stop-color="#0051ff" stop-opacity="0" />
+            </radialGradient>
+            <!-- Camino circular para el grabado metálico -->
+            <path id="engravedTextPath" d="M 150, 150 m -124, 0 a 124,124 0 1,1 248,0 a 124,124 0 1,1 -248,0" />
+          </defs>
+
+          <!-- Aro Metálico Exterior -->
+          <circle cx="150" cy="150" r="138" fill="none" stroke="rgba(0,240,255,0.25)" stroke-width="2" />
+          <circle cx="150" cy="150" r="114" fill="none" stroke="rgba(212,122,57,0.5)" stroke-width="4" />
+
+          <!-- Texto Grabado: PROOF THAT MATHIAS HAS A HEART -->
+          <text fill="#f5a623" font-family="'Orbitron', sans-serif" font-size="9.3" font-weight="700" letter-spacing="2.3px">
+            <textPath href="#engravedTextPath" startOffset="3%">
+              • PROOF THAT MATHIAS HAS A HEART • FOR ANGELINA •
+            </textPath>
+          </text>
+
+          <!-- 10 Bobinas de Cobre Radiales -->
+          <g stroke="#d47a39" stroke-width="6" stroke-linecap="round">
+            <line x1="150" y1="36" x2="150" y2="52" />
+            <line x1="217" y1="58" x2="207" y2="71" />
+            <line x1="258" y1="115" x2="243" y2="120" />
+            <line x1="258" y1="185" x2="243" y2="180" />
+            <line x1="217" y1="242" x2="207" y2="229" />
+            <line x1="150" y1="264" x2="150" y2="248" />
+            <line x1="83" y1="242" x2="93" y2="229" />
+            <line x1="42" y1="185" x2="57" y2="180" />
+            <line x1="42" y1="115" x2="57" y2="120" />
+            <line x1="83" y1="58" x2="93" y2="71" />
+          </g>
+
+          <!-- Anillo Giratorio Horario -->
+          <g class="ring-cw" id="ring-cw">
+            <circle cx="150" cy="150" r="95" fill="none" stroke="#00f0ff" stroke-width="6" stroke-dasharray="28 14 10 14" />
+          </g>
+
+          <!-- Anillo Giratorio Antihorario -->
+          <g class="ring-ccw" id="ring-ccw">
+            <circle cx="150" cy="150" r="74" fill="none" stroke="#80f8ff" stroke-width="4" stroke-dasharray="18 12" />
+          </g>
+
+          <!-- Triángulo Central Mark 85 -->
+          <polygon points="150,96 200,178 100,178" fill="rgba(0,240,255,0.15)" stroke="#00f0ff" stroke-width="2.5" />
+
+          <!-- Núcleo Luminoso -->
+          <circle cx="150" cy="150" r="46" fill="url(#coreGlow)" />
+          <circle cx="150" cy="150" r="28" fill="#ffffff" opacity="0.9" />
+        </svg>
+
+        <div class="reactor-percent-badge" id="reactor-percent-label">20%</div>
+      </div>
+
+      <!-- Controles Deslizantes -->
+      <div class="power-controls">
+        <input type="range" min="0" max="100" value="20" class="stark-slider" id="power-slider" />
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button class="btn-hud" id="btn-boost-power" style="width:100%;">
+            INYECTAR +20% DE ENERGÍA AL REACTOR
+          </button>
+        </div>
+      </div>
+
+      <!-- Monitor de Bitácoras Desbloqueadas -->
+      <div class="unlock-monitor">
+        <div class="unlock-phase" id="unlock-phase-title">FASE 1 ACTIVA [20% CAPACIDAD]</div>
+        <div class="unlock-text" id="unlock-phase-message">
+          Quería programarte algo único porque las palabras normales me quedan cortas para explicar todo lo que siento por ti, Angelina.
+        </div>
+      </div>
+
+      <!-- BOTÓN QUE SE DESBLOQUEA AL 100% PARA VER EL HOLOGRAMA -->
+      <button class="btn-hud btn-gold" id="btn-open-hologram">
+        ★ PROYECTAR HOLOGRAMA DEL CASCO (MENSAJE DE MATHIAS) ★
+      </button>
+    </section>
+
+    <!-- COLUMNA DERECHA: SERVIDOR 3000 + PROYECTO SECRETO MARK 49 -->
+    <section>
+      <div class="hud-panel">
+        <div class="panel-header">
+          <span class="panel-title">Servidor "Te Quiero 3,000"</span>
+          <span class="panel-code" id="reason-counter-tag">ARCHIVO [01/18]</span>
+        </div>
+
+        <div class="counter-3000">
+          <div>
+            <div style="font-size:0.78rem; color:var(--text-muted);">NIVEL DE AMOR REGISTRADO</div>
+            <div style="font-family:'Share Tech Mono',monospace; font-size:0.85rem; color:var(--primary);">
+              MATHIAS &rarr; ANGELINA
+            </div>
+          </div>
+          <div class="big-3000">3000</div>
+        </div>
+
+        <div class="reason-terminal">
+          <span id="typewriter-text">Presiona el botón inferior para desencriptar una razón del servidor privado de Mathias...</span><span class="cursor-blink"></span>
+        </div>
+
+        <button class="btn-hud" style="width:100%;" id="btn-next-reason">
+          DESCIFRAR RAZÓN DEL ARCHIVO
+        </button>
+      </div>
+
+      <!-- MÓDULO SECRETO: ARMADURA MARK XLIX (RESCUE) -->
+      <div class="hud-panel">
+        <div class="panel-header">
+          <span class="panel-title" style="color:var(--gold);">Proyecto Secreto: Mark XLIX</span>
+          <span class="panel-code">RESCUE // ANGELINA</span>
+        </div>
+        <p style="font-size:0.93rem; line-height:1.45; color:var(--text-main);">
+          Igual que Tony construyó la armadura <strong>Mark 49 (Rescue)</strong> en secreto para proteger a quien más amaba en el universo, este módulo está programado para cuidarte siempre:
+        </p>
+
+        <div class="rescue-drones">
+          <div class="drone-hex">01</div>
+          <div class="drone-hex">02</div>
+          <div class="drone-hex">03</div>
+          <div class="drone-hex">04</div>
+          <div class="drone-hex">05</div>
+          <div class="drone-hex">06</div>
+        </div>
+
+        <div style="font-family:'Share Tech Mono',monospace; font-size:0.78rem; color:var(--text-muted); background:rgba(0,0,0,0.3); padding:10px; border-left:2px solid var(--gold);">
+          &gt; USUARIA EXCLUSIVA: Angelina (Mi niña hermosa)<br/>
+          &gt; ESCUDO ACTIVO CONTRA: Días pesados, frío o tristeza.<br/>
+          &gt; PROMESA: Estar siempre a tu lado sin importar la hora.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================
+       MODAL DEL HOLOGRAMA DEL CASCO MARK LXXXV (TU VIDEO)
+       ========================================================= -->
+  <div id="hologram-modal">
+    <div class="holo-top-bar">
+      <div>
+        <div class="brand-title">PROYECCIÓN HOLOGRÁFICA MARK LXXXV // GRABACIÓN DE MATHIAS</div>
+        <div style="font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:var(--gold);">
+          DESTINATARIA EXCLUSIVA: ANGELINA // FRECUENCIA: 02:00 AM
+        </div>
+      </div>
+      <button class="btn-hud btn-crimson btn-sm" id="btn-close-hologram">
+        CERRAR PROYECCIÓN [X]
+      </button>
+    </div>
+
+    <div class="holo-stage">
+      <!-- Pantalla Flotante del Holograma -->
+      <div class="holo-projection-box">
+        <!-- Reproductor de tu video con filtro holográfico automático -->
+        <video id="holo-video" playsinline loop controls>
+          <source src="mi-video.mp4" type="video/mp4" />
+        </video>
+        <div class="holo-scanlines"></div>
+
+        <!-- Mensaje de las 2 AM grabado en el holograma -->
+        <div class="holo-caption-overlay">
+          <p class="holo-quote" id="holo-quote-text">
+            "Son casi las 2 de la mañana y no logro dormir. Sé que todavía estamos chicos y nos falta mucho por vivir, pero no te imaginas lo que daría por estar ahí contigo, abrazarte y quedarme dormido sintiendo que estás a mi lado. Te quiero 3,000, mi niña hermosa."
+          </p>
+        </div>
+      </div>
+
+      <!-- Cono de Luz Volumétrico Cian -->
+      <div class="holo-light-cone"></div>
+
+      <!-- Casco de Iron Man (Mark 85) en SVG proyectando el haz desde los ojos -->
+      <svg class="helmet-svg" viewBox="0 0 220 130">
+        <!-- Base de la mesa -->
+        <ellipse cx="110" cy="118" rx="95" ry="8" fill="rgba(0, 240, 255, 0.15)" />
+        <!-- Silueta del Casco Mark 85 acostado -->
+        <path d="M55,112 L42,75 L62,28 L110,16 L158,28 L178,75 L165,112 Z" fill="#8c1d24" stroke="#f5a623" stroke-width="3" />
+        <path d="M68,108 L58,68 L75,35 L110,28 L145,35 L162,68 L152,108 Z" fill="#d4af37" stroke="#f5a623" stroke-width="2" />
+        <!-- Ojos brillantes proyectores del holograma -->
+        <polygon points="73,65 102,68 98,76 70,73" fill="#ffffff" stroke="#00f0ff" stroke-width="2" />
+        <polygon points="147,65 118,68 122,76 150,73" fill="#ffffff" stroke="#00f0ff" stroke-width="2" />
+        <!-- Detalles de la mentonera -->
+        <path d="M85,95 L110,88 L135,95 L128,112 L92,112 Z" fill="#6b1319" stroke="#f5a623" stroke-width="1.5" />
+      </svg>
+
+      <!-- Botones para cargar o probar tu video al instante -->
+      <div class="holo-controls-bar">
+        <label for="video-upload" class="btn-hud btn-gold btn-sm">
+          📁 ELEGIR TU VIDEO GRABADO (.MP4 / CÁMARA)
+        </label>
+        <input type="file" id="video-upload" accept="video/*" />
+        <button class="btn-hud btn-sm" id="btn-webcam-live">
+          📷 USAR CÁMARA EN VIVO COMO HOLOGRAMA
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       LÓGICA JAVASCRIPT & CONFIGURACIÓN PERSONALIZADA
+       ========================================================= -->
+  <script>
+    /* =========================================================
+       OBJETO DE CONFIGURACIÓN (FÁCIL DE EDITAR PARA MATHIAS)
+       ========================================================= */
+    const STARK_CONFIG = {
+      creatorName: "Mathias",
+      girlfriendName: "Angelina",
+      // Coloca tu video en la misma carpeta con este nombre, o cárgale uno con el botón:
+      videoUrl: "mi-video.mp4",
+
+      // Fases del Reactor Arc (0% a 100%)
+      reactorPhases: [
+        {
+          min: 0,
+          title: "MODO REPOSO [0% CAPACIDAD]",
+          text: "El reactor de Mathias está en espera. Necesita la energía de Angelina para encender al 100%."
+        },
+        {
+          min: 20,
+          title: "FASE 1 ACTIVA [20% CAPACIDAD]",
+          text: "Quería programarte algo único porque las palabras normales se quedan cortas para todo lo que siento por ti, Angelina."
+        },
+        {
+          min: 40,
+          title: "FASE 2 ACTIVA [40% CAPACIDAD]",
+          text: "Entre tantas cosas e ideas dando vueltas en mi cabeza, tú siempre eres mi lugar seguro y mi paz."
+        },
+        {
+          min: 60,
+          title: "FASE 3 ACTIVA [60% - MODO 2:00 AM]",
+          text: "Son casi las 2 de la mañana y por más que intento no logro dormir. Me puse a pensar en ti y en lo mucho que me haces falta ahora mismo."
+        },
+        {
+          min: 80,
+          title: "FASE 4 ACTIVA [80% CAPACIDAD]",
+          text: "Sé que todavía estamos chicos y que nos faltan muchas cosas por vivir, pero no te imaginas lo que daría por estar ahí contigo y abrazarte."
+        },
+        {
+          min: 100,
+          title: "★ CAPACIDAD AL 100% // CORAZÓN DESBLOQUEADO ★",
+          text: "Daría lo que fuera por quedarme dormido sintiendo que estás a mi lado. ¡HOLOGRAMA DEL CASCO DESBLOQUEADO ABAJO! Te quiero 3,000, mi niña hermosa."
+        }
+      ],
+
+      // 18 Razones Sinceras (Servidor 3000 sin repetición)
+      reasons3000: [
+        "Porque cuando me dan las 2:00 AM sin poder dormir, pensar en ti es lo único que me trae paz.",
+        "Porque aunque soy un caos con mil ideas en la cabeza, tú eres mi cable a tierra, Angelina.",
+        "Porque daría lo que fuera por poder acostarme a tu lado, abrazarte fuerte y quedarme dormido contigo.",
+        "Porque sé que todavía estamos chicos, pero quiero vivir todas las etapas que vienen a tu lado.",
+        "Porque tienes la sonrisa más linda del mundo y me cambias el ánimo en un segundo.",
+        "Porque contigo no tengo que fingir nada; puedo ser yo mismo al 100%.",
+        "Porque eres la única persona capaz de domar mi terquedad sin siquiera esforzarte.",
+        "Porque cada vez que me llega un mensaje tuyo, mi ritmo cardíaco se dispara como el reactor.",
+        "Porque me inspiras a ser mejor, a construir cosas grandes y a cuidarte siempre.",
+        "Porque hasta el plan más sencillo del mundo se vuelve increíble si es contigo.",
+        "Porque escuchar tu voz o saber que estás bien me reinicia el sistema por completo.",
+        "Porque eres mi niña hermosa y mi lugar favorito siempre va a ser donde estés tú.",
+        "Porque me encanta cómo pones orden en mi universo tal como Pepper lo hace con Tony.",
+        "Porque te extraño incluso cinco minutos después de habernos despedido.",
+        "Porque tienes una ternura que desarma cualquiera de mis armaduras.",
+        "Porque cada recuerdo que tenemos juntos vale más que toda la tecnología de Stark Industries.",
+        "Porque siempre voy a estar de tu lado para protegerte y apoyarte en todo.",
+        "Porque simplemente te quiero 3,000, hoy, en las madrugadas de desvelo y siempre."
+      ],
+
+      // 8 Vales Digitales Canjeables (Protocolo de Emergencia)
+      vouchers: [
+        { code: "ANG-VIP-001", title: "VALE POR DORMIR ABRAZADOS", desc: "Válido por quedarnos abrazados sin soltarnos hasta quedarnos profundamente dormidos." },
+        { code: "ANG-VIP-002", title: "VALE POR TENER LA RAZÓN AL 100%", desc: "Anula cualquier terquedad de Mathias automáticamente y sin discusiones." },
+        { code: "ANG-VIP-003", title: "VALE POR TU ANTOJO FAVORITO", desc: "Válido por una salida a comer tu postre, helado o comida favorita. Invita Mathias." },
+        { code: "ANG-VIP-004", title: "VALE POR UN ABRAZO DE 10 MINUTOS", desc: "Canjeable apenas nos veamos. Prohibido soltarse antes de que termine el tiempo." },
+        { code: "ANG-VIP-005", title: "VALE POR CITA DE PELÍCULAS", desc: "Tú eliges la película o serie, yo pongo los snacks y los cariñitos." },
+        { code: "ANG-VIP-006", title: "VALE POR LLAMADA DE MADRUGADA", desc: "Válido para quedarnos hablando hasta tarde cuando ninguno de los dos pueda dormir." },
+        { code: "ANG-VIP-007", title: "VALE POR MIMOS ILIMITADOS", desc: "Sesión exclusiva de cariñitos en el cabello, besos y atención al 1000%." },
+        { code: "ANG-VIP-008", title: "VALE COMODÍN NIVEL CEO", desc: "Angelina decide el plan o deseo especial y Mathias cumple sin rechistar." }
+      ]
+    };
+
+    /* =========================================================
+       MOTOR DE SÍNTESIS DE AUDIO (WEB AUDIO API NATIVA)
+       ========================================================= */
+    class StarkAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx.state === "suspended") {
+          this.ctx.resume();
+        }
+      }
+
+      playClick() {
+        if (this.muted || !this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1300, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(650, this.ctx.currentTime + 0.045);
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.045);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.05);
+      }
+
+      playTypeTick() {
+        if (this.muted || !this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(920, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.025, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.02);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.022);
+      }
+
+      playBoot() {
+        if (this.muted || !this.ctx) return;
+        const notes = [330, 440, 659.25, 880];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "sine";
+          const startTime = this.ctx.currentTime + idx * 0.09;
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(0.08, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + 0.36);
+        });
+      }
+
+      playReactorCharge(percent) {
+        if (this.muted || !this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "sine";
+        const baseFreq = 220 + percent * 5.2;
+        osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.25, this.ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.07, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.13);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.14);
+      }
+
+      playFanfare() {
+        if (this.muted || !this.ctx) return;
+        const chord = [523.25, 659.25, 783.99, 1046.5];
+        chord.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "triangle";
+          const t = this.ctx.currentTime + i * 0.08;
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.1, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.56);
+        });
+      }
+    }
+
+    const sound = new StarkAudioEngine();
+
+    /* =========================================================
+       INICIALIZACIÓN Y EVENTOS DEL SISTEMA
+       ========================================================= */
+    // 1. Pantalla de Autenticación Biométrica
+    const authOverlay = document.getElementById("auth-overlay");
+    const authStatusText = document.getElementById("auth-status-text");
+    const triggerAuth = () => {
+      sound.init();
+      sound.playBoot();
+      authStatusText.innerHTML = "IDENTIDAD CONFIRMADA: <strong>ANGELINA (LA DUEÑA DEL CORAZÓN DE MATHIAS)</strong>. INICIANDO HUD...";
+      setTimeout(() => {
+        authOverlay.classList.add("hidden");
+      }, 950);
+    };
+    document.getElementById("btn-auth-start").addEventListener("click", triggerAuth);
+    document.getElementById("btn-auth-ring").addEventListener("click", triggerAuth);
+
+    // 2. Botón Mute y Botón Modo Armadura Mark XLIX (Rescue)
+    const btnMute = document.getElementById("btn-mute");
+    btnMute.addEventListener("click", () => {
+      sound.muted = !sound.muted;
+      btnMute.textContent = sound.muted ? "AUDIO: OFF" : "AUDIO: ON";
+    });
+
+    const btnRescue = document.getElementById("btn-rescue-mode");
+    btnRescue.addEventListener("click", () => {
+      sound.playClick();
+      document.body.classList.toggle("rescue-mode");
+      const isRescue = document.body.classList.contains("rescue-mode");
+      btnRescue.textContent = isRescue
+        ? "ARMADURA MARK XLIX: RESCUE (ACTIVA)"
+        : "ARMADURA MARK XLIX: RESCUE (OFF)";
+    });
+
+    // 3. Control del Reactor Arc (0% a 100%)
+    const powerSlider = document.getElementById("power-slider");
+    const percentLabel = document.getElementById("reactor-percent-label");
+    const statusTag = document.getElementById("reactor-status-tag");
+    const phaseTitle = document.getElementById("unlock-phase-title");
+    const phaseMessage = document.getElementById("unlock-phase-message");
+    const btnOpenHolo = document.getElementById("btn-open-hologram");
+    const reactorSvg = document.getElementById("reactor-svg");
+    let confettiFired = false;
+
+    function updateReactor(val) {
+      const pct = parseInt(val, 10);
+      powerSlider.value = pct;
+      percentLabel.textContent = pct + "%";
+      statusTag.textContent = pct === 100 ? "MAX POWER // 100%" : `ONLINE // ${pct}%`;
+
+      // Escalar brillo según la potencia
+      const glowRadius = 10 + (pct * 0.35);
+      reactorSvg.style.filter = `drop-shadow(0 0 ${glowRadius}px rgba(0, 240, 255, ${0.3 + pct / 140}))`;
+
+      // Buscar la fase correspondiente
+      let currentPhase = STARK_CONFIG.reactorPhases[0];
+      for (const phase of STARK_CONFIG.reactorPhases) {
+        if (pct >= phase.min) currentPhase = phase;
+      }
+      phaseTitle.textContent = currentPhase.title;
+      phaseMessage.textContent = currentPhase.text;
+
+      sound.playReactorCharge(pct);
+
+      if (pct === 100) {
+        btnOpenHolo.style.display = "block";
+        if (!confettiFired && typeof confetti === "function") {
+          confettiFired = true;
+          sound.playFanfare();
+          confetti({
+            particleCount: 95,
+            spread: 80,
+            origin: { y: 0.6 },
+            colors: ["#00f0ff", "#f5a623", "#ffffff"]
+          });
+        }
+      }
+    }
+
+    powerSlider.addEventListener("input", (e) => updateReactor(e.target.value));
+
+    const boostPower = () => {
+      let nextVal = parseInt(powerSlider.value, 10) + 20;
+      if (nextVal > 100) nextVal = 100;
+      updateReactor(nextVal);
+    };
+    document.getElementById("btn-boost-power").addEventListener("click", boostPower);
+    document.getElementById("reactor-click-zone").addEventListener("click", boostPower);
+
+    // 4. Generador "Te Quiero 3,000" con mezcla Fisher-Yates sin repetición
+    let shuffledReasons = [...STARK_CONFIG.reasons3000];
+    let reasonIndex = 0;
+    let typingInterval = null;
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+    shuffleArray(shuffledReasons);
+
+    const typewriterEl = document.getElementById("typewriter-text");
+    const reasonTagEl = document.getElementById("reason-counter-tag");
+
+    document.getElementById("btn-next-reason").addEventListener("click", () => {
+      sound.playClick();
+      if (reasonIndex >= shuffledReasons.length) {
+        shuffleArray(shuffledReasons);
+        reasonIndex = 0;
+      }
+      const selectedReason = shuffledReasons[reasonIndex];
+      reasonIndex++;
+      reasonTagEl.textContent = `ARCHIVO [${String(reasonIndex).padStart(2, "0")}/${shuffledReasons.length}]`;
+
+      clearInterval(typingInterval);
+      typewriterEl.textContent = "";
+      let charIdx = 0;
+      typingInterval = setInterval(() => {
+        if (charIdx < selectedReason.length) {
+          typewriterEl.textContent += selectedReason.charAt(charIdx);
+          if (charIdx % 3 === 0) sound.playTypeTick();
+          charIdx++;
+        } else {
+          clearInterval(typingInterval);
+        }
+      }, 22);
+    });
+
+    // 5. Protocolo de Emergencia Angelina (Domar a Mathias + Emitir Vale)
+    const voucherBox = document.getElementById("voucher-box");
+    const voucherSerial = document.getElementById("voucher-serial");
+    const voucherTitle = document.getElementById("voucher-title");
+    const voucherDesc = document.getElementById("voucher-desc");
+
+    document.getElementById("btn-emergency").addEventListener("click", () => {
+      sound.playFanfare();
+
+      const randomVoucher = STARK_CONFIG.vouchers[Math.floor(Math.random() * STARK_CONFIG.vouchers.length)];
+      voucherSerial.textContent = `VALE OFICIAL // ${randomVoucher.code}`;
+      voucherTitle.textContent = randomVoucher.title;
+      voucherDesc.textContent = randomVoucher.desc;
+      voucherBox.classList.add("active");
+    });
+
+
+    // 7. Modal del Proyector Holográfico del Casco (Tu Video)
+    const holoModal = document.getElementById("hologram-modal");
+    const holoVideo = document.getElementById("holo-video");
+
+    btnOpenHolo.addEventListener("click", () => {
+      sound.playBoot();
+      holoModal.classList.add("active");
+      holoVideo.play().catch(() => {});
+    });
+
+    document.getElementById("btn-close-hologram").addEventListener("click", () => {
+      sound.playClick();
+      holoModal.classList.remove("active");
+      holoVideo.pause();
+    });
+
+    // Subir o seleccionar video MP4 desde tu dispositivo al instante
+    document.getElementById("video-upload").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const fileURL = URL.createObjectURL(file);
+        holoVideo.srcObject = null;
+        holoVideo.src = fileURL;
+        holoVideo.play();
+      }
+    });
+
+    // Usar cámara en vivo para verte como holograma en tiempo real
+    document.getElementById("btn-webcam-live").addEventListener("click", async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        holoVideo.srcObject = stream;
+        holoVideo.play();
+      } catch (err) {
+        alert("No se pudo acceder a la cámara o necesitas permiso del navegador.");
+      }
+    });
+  
+/* ===== MEJORAS ===== */
+(function(){
+  const $=id=>document.getElementById(id);
+  const t=document.createElement('div');t.id='toast-x';document.body.appendChild(t);
+  const toast=m=>{t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2400)};
+
+  // 1) Reactor: anillos y brillo proporcionales a la energía; fusión cian-dorado al 100%
+  const base=updateReactor;
+  updateReactor=function(val){
+    base(val);
+    const p=parseInt(val,10),k=p/100;
+    const cw=$('ring-cw'),ccw=$('ring-ccw');
+    if(cw)cw.style.animationDuration=(24-20*k).toFixed(1)+'s';
+    if(ccw)ccw.style.animationDuration=(18-15*k).toFixed(1)+'s';
+    const c=p>=100?'var(--gold)':'var(--primary)';
+    reactorSvg.style.filter=`drop-shadow(0 0 ${10+p*.5}px ${c}) drop-shadow(0 0 ${p>=100?30:0}px var(--primary))`;
+    document.body.classList.toggle('maxed',p>=100);
+    if(p<100)confettiFired=false;
+    if(p>=100&&typeof confetti==='function'){setTimeout(()=>{confetti({particleCount:70,angle:60,spread:70,origin:{x:0,y:.7},colors:['#00f0ff','#f5a623','#ffffff']});confetti({particleCount:70,angle:120,spread:70,origin:{x:1,y:.7},colors:['#00f0ff','#f5a623','#ffffff']})},300)}
+  };
+
+
+  // 3) Protocolo: vale sin repetir, animación en cada uso y botón para guardarlo como imagen
+  let last=null;
+  const save=document.createElement('button');save.id='btn-save-voucher';save.className='btn-hud btn-gold';save.textContent='GUARDAR / CAPTURAR VALE';
+  $('voucher-box').appendChild(save);
+  $('btn-emergency').addEventListener('click',()=>{
+    const V=STARK_CONFIG.vouchers;let v;
+    if(V.length>1){do{v=V[Math.floor(Math.random()*V.length)]}while(v.title===last)}else v=V[0];
+    last=v.title;
+    $('voucher-serial').textContent=`VALE OFICIAL // ${v.code}`;$('voucher-title').textContent=v.title;$('voucher-desc').textContent=v.desc;
+    const b=$('voucher-box');b.classList.remove('again');void b.offsetWidth;b.classList.add('again');
+    b.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+  function wrap(g,txt,x,y,w,lh){let l='';txt.split(' ').forEach(wd=>{const n=l+wd+' ';if(g.measureText(n).width>w){g.fillText(l,x,y);y+=lh;l=wd+' '}else l=n});g.fillText(l,x,y);return y+lh}
+  save.addEventListener('click',()=>{
+    sound.playClick();
+    const c=document.createElement('canvas');c.width=900;c.height=460;const g=c.getContext('2d');
+    const gr=g.createLinearGradient(0,0,900,460);gr.addColorStop(0,'#ffe29a');gr.addColorStop(.5,'#f5a623');gr.addColorStop(1,'#d47a39');
+    g.fillStyle=gr;g.fillRect(0,0,900,460);g.strokeStyle='#2a1700';g.lineWidth=4;g.strokeRect(16,16,868,428);
+    g.fillStyle='#2a1700';g.font='bold 22px monospace';g.fillText($('voucher-serial').textContent,40,64);
+    g.font='bold 38px sans-serif';let y=wrap(g,$('voucher-title').textContent,40,140,820,48);
+    g.font='26px sans-serif';wrap(g,$('voucher-desc').textContent,40,y+20,820,34);
+    g.font='18px monospace';g.fillText('Canjeable con Angelina // Te quiero 3,000',40,420);
+    const a=document.createElement('a');a.download='vale-angelina.png';a.href=c.toDataURL('image/png');a.click();
+    toast('Vale capturado y guardado en tu dispositivo.');
+  });
+
+  // 4) Holograma: apagar cámara al cerrar y cerrar con Escape
+  const close=$('btn-close-hologram');
+  close.addEventListener('click',()=>{const s=holoVideo.srcObject;if(s&&s.getTracks)s.getTracks().forEach(x=>x.stop());holoVideo.srcObject=null});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&holoModal.classList.contains('active'))close.click()});
+
+  // 5) Tocar la terminal completa el texto al instante
+  $('typewriter-text').addEventListener('click',()=>{if(typingInterval){clearInterval(typingInterval);typingInterval=null;const i=reasonIndex-1;if(i>=0)$('typewriter-text').textContent=shuffledReasons[i]}});
+})();
+</script>
+</body>
+</html>
